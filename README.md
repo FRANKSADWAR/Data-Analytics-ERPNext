@@ -21,3 +21,15 @@ core ERP system.
 
 Similar approach can be used on any other ERP System, provided that the Online Transaction Processing Database (OLTP) can be accessed, or is solely available  to the business.
 
+# The Scale
+The scale of the business will most likely determine the approach to data analytics. What do I mean by this ?
+Businesses operate on different frequencies - volume of revenue or capital, volume of transactions, and volume of users.  
+Based on these factors, this repository is based on a business with a high frequency on those three frequencies. 
+
+High number of transactions mean that the database has a medium to high load, with high read and write operations. Revenue and capital, speaking in Kenyan terms, determine how a business is willing to invest in a scalable data strategy. The number of users determine the level of feedback 
+we can be able to get from users who interact with the systems daily.
+
+In my opinion, these factors determine the direction a business will take with regards to their overall IT strategy and specifically the data strategy.
+
+
+# Technical Overview
