@@ -49,8 +49,16 @@ but also enable the team to make data driven decisions from.
 
 
 ### Data Transformation
-
+- Apache Spark, dbt
 
 ### The data model
 
+
 ### Orchestration
+- Apache Airflow
+
+### Monitoring
+- Prometheus, Grafana
+
+### Data analytics
+- Metabase
