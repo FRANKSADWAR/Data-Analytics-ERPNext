@@ -50,3 +50,27 @@ FROM customer_sales
     ORDER BY total_sales_per DESC
 
 
+-- Weekly sales revenue
+WITH
+  sales_invoices AS (
+    SELECT
+      `tabSales Invoice`.name,
+      `tabSales Invoice`.posting_date,
+      WEEK(`tabSales Invoice`.posting_date, 0) AS week_no,
+      `tabSales Invoice`.customer,
+      `tabSales Invoice`.customer_name,
+      `tabSales Invoice`.base_grand_total,
+      `tabSales Invoice`.status
+    FROM
+      `tabSales Invoice`
+    WHERE
+      `tabSales Invoice`.docstatus = 1
+      AND {{ date }}
+  )
+SELECT
+  week_no,
+  SUM(base_grand_total) AS total_weekly_sales
+FROM
+  sales_invoices
+GROUP BY
+  week_no
