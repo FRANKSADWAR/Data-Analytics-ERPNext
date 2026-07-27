@@ -33,3 +33,16 @@ In my opinion, these factors determine the direction a business will take with r
 
 
 # Technical Overview
+The current business use case fow which this solution fits, is a case where the OLTP Database (MariaDB) has between hundreds of thousands to millions of rows in some tables.
+ERPNext relises heavily on transactions, where an operation such as sales triggers several other read and write operations in other tables i.e inventory, accounting ledgers, user logs.
+There are 70 active users in the setup, doing different activties inclusing generating reports. This therefore means that having an analytics 
+platform connected to the database directly will increase even more stress on the database. So we would have solved the problem of insights but
+introduced another problem.
+
+## The data engineeing lifecycle perspective
+Instead of having our analytics software (Metabase - opensource) connected directly on the same OLTP database, I decided that we sould have 
+another database (data warehouse), where the analytics platform will be extracting insights from.
+The mountain to climb is therefore to organize the data analytics infrastrusture (in a less costly manner), which will give the best value
+but also enable the team to make data driven decisions from.
+
+The lifecycle involves data ingestion 
