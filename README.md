@@ -49,3 +49,8 @@ but also enable the team to make data driven decisions from.
 
 
 ### Data Transformation
+
+
+### The data model
+
+### Orchestration
