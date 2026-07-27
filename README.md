@@ -45,4 +45,7 @@ another database (data warehouse), where the analytics platform will be extracti
 The mountain to climb is therefore to organize the data analytics infrastrusture (in a less costly manner), which will give the best value
 but also enable the team to make data driven decisions from.
 
-The lifecycle involves data ingestion 
+### Data Ingestion
+
+
+### Data Transformation
