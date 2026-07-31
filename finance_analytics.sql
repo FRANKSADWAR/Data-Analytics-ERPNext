@@ -578,3 +578,19 @@ WITH
     SUM(supplier_balances) AS total_owed
     FROM payable_amount
     WHERE supplier_balances > 0
+
+-- Get customer balance from GL Entry
+WITH transactions AS (
+  SELECT
+      party,
+      party_type,
+      transaction_currency,
+      debit_in_transaction_currency,
+      credit_in_transaction_currency
+    FROM
+      `tabGL Entry`
+    WHERE
+      party = 'CUST-2025-00033'
+      AND is_cancelled = 0
+)
+SELECT party, transaction_currency, (SUM(debit_in_transaction_currency) - SUM(credit_in_transaction_currency)) AS balance FROM transactions GROUP BY party
