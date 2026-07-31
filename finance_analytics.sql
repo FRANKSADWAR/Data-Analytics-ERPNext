@@ -594,3 +594,71 @@ WITH transactions AS (
       AND is_cancelled = 0
 )
 SELECT party, transaction_currency, (SUM(debit_in_transaction_currency) - SUM(credit_in_transaction_currency)) AS balance FROM transactions GROUP BY party
+
+-- Amount received from customers during a period
+WITH
+    -- Get the total amount collected during the period
+    received_amounts_from_customers AS (
+        SELECT
+            `tabGL Entry`.posting_date,
+            `tabGL Entry`.account,
+            `tabGL Entry`.debit,
+            `tabGL Entry`.credit,
+            `tabGL Entry`.against,
+            `tabGL Entry`.party_type,
+            customer.customer_name,
+            `tabGL Entry`.voucher_type,
+            `tabGL Entry`.voucher_no,
+            `tabGL Entry`.voucher_subtype,
+            `tabGL Entry`.against_voucher_type,
+            `tabGL Entry`.against_voucher
+        FROM `tabGL Entry`
+            INNER JOIN `tabAccount` AS acc ON `tabGL Entry`.account = acc.name
+            INNER JOIN `tabCustomer` AS customer ON `tabGL Entry`.against = customer.name
+        WHERE acc.account_type IN ('Bank','Cash')
+            AND `tabGL Entry`.is_cancelled = 0
+            AND `tabGL Entry`.voucher_subtype IN ('Journal Entry','Receive')
+            AND `tabGL Entry`.posting_date BETWEEN '2026-07-01' AND '2026-07-31'
+            AND `tabGL Entry`.account NOT IN ('Suspense Account NML')
+            AND `tabGL Entry`.debit > 0
+    ),
+    
+    -- summarize the collected amount during the period
+    collected_amount_summary AS (
+        SELECT 
+            account AS account_name, 
+            SUM(debit) AS money_in 
+        FROM received_amounts_from_customers 
+        GROUP BY account
+    )
+    
+-- Amount paid to suppliers during a period
+WITH
+    -- Get the total amount paid to suppliers during the period
+    amount_paid_to_suppliers AS (
+        SELECT
+            `tabGL Entry`.posting_date,
+            `tabGL Entry`.account,
+            `tabGL Entry`.debit,
+            `tabGL Entry`.credit,
+            `tabGL Entry`.against,
+            `tabGL Entry`.party_type,
+            supplier.supplier_name,
+            `tabGL Entry`.parent_account,
+            `tabGL Entry`.voucher_type,
+            `tabGL Entry`.voucher_no,
+            `tabGL Entry`.voucher_subtype,
+            `tabGL Entry`.against_voucher_type,
+            `tabGL Entry`.against_voucher
+        FROM `tabGL Entry`
+            INNER JOIN `tabAccount` AS acc ON `tabGL Entry`.account = acc.name
+            INNER JOIN `tabSupplier` AS supplier ON `tabGL Entry`.against = supplier.name
+        WHERE acc.account_type IN ('Bank','Cash')
+            AND `tabGL Entry`.is_cancelled = 0
+            AND `tabGL Entry`.voucher_subtype IN ('Journal Entry','Pay')
+            AND `tabGL Entry`.posting_date BETWEEN '2026-07-01' AND '2026-07-31'
+            AND `tabGL Entry`.account NOT IN ('Suspense Account NML')
+            AND `tabGL Entry`.credit > 0
+    )
+    
+    SELECT * FROM amount_paid_to_suppliers
