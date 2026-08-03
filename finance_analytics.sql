@@ -662,3 +662,177 @@ WITH
     )
     
     SELECT * FROM amount_paid_to_suppliers
+
+
+-- Cash flow mapping in and out of the business
+WITH
+    -- Get the total amount collected during the period
+    received_amounts_from_customers AS (
+        SELECT
+            `tabGL Entry`.posting_date,
+            `tabGL Entry`.account,
+            `tabGL Entry`.debit,
+            `tabGL Entry`.credit,
+            `tabGL Entry`.against,
+            `tabGL Entry`.party_type,
+            customer.customer_name,
+            `tabGL Entry`.voucher_type,
+            `tabGL Entry`.voucher_no,
+            `tabGL Entry`.voucher_subtype,
+            `tabGL Entry`.against_voucher_type,
+            `tabGL Entry`.against_voucher
+        FROM `tabGL Entry`
+            INNER JOIN `tabAccount` AS acc ON `tabGL Entry`.account = acc.name
+            INNER JOIN `tabCustomer` AS customer ON `tabGL Entry`.against = customer.name
+        WHERE acc.account_type IN ('Bank','Cash')
+            AND `tabGL Entry`.is_cancelled = 0
+            AND `tabGL Entry`.voucher_subtype IN ('Journal Entry','Receive')
+            AND `tabGL Entry`.posting_date BETWEEN {{ start_date }} AND {{ end_date }}
+            AND `tabGL Entry`.account NOT IN ('Suspense Account NML')
+            AND `tabGL Entry`.debit > 0
+    ),
+    
+    -- summarize the collected amount during the period
+    collected_amount_summary AS (
+        SELECT 
+            account AS account_name, 
+            SUM(debit) AS amount 
+        FROM received_amounts_from_customers 
+        GROUP BY account
+    ),
+    
+    -- Get the total amount paid to suppliers during the period
+    payroll_party_accounts AS (
+        SELECT
+            `tabSupplier`.name AS supplier_id, 
+            `tabSupplier`.supplier_name,
+            `tabParty Account`.account AS party_account,
+            `tabAccount`.parent_account
+        FROM `tabSupplier`
+            INNER JOIN `tabParty Account` ON `tabSupplier`.name = `tabParty Account`.parent
+            INNER JOIN `tabAccount` ON `tabAccount`.name = `tabParty Account`.account
+        WHERE 
+            `tabAccount`.parent_account LIKE '%Payroll%'
+    
+    ),
+    
+    amount_paid_to_suppliers AS (
+        SELECT
+            `tabGL Entry`.posting_date,
+            `tabGL Entry`.account,
+            `tabGL Entry`.debit,
+            `tabGL Entry`.credit,
+            `tabGL Entry`.against,
+            supplier.supplier_name,
+            `tabGL Entry`.voucher_type,
+            `tabGL Entry`.voucher_no,
+            `tabGL Entry`.voucher_subtype,
+            payroll_party_accounts.parent_account
+        FROM `tabGL Entry`
+            INNER JOIN `tabAccount` AS acc ON `tabGL Entry`.account = acc.name
+            INNER JOIN `tabSupplier` AS supplier ON `tabGL Entry`.against = supplier.name
+            LEFT JOIN payroll_party_accounts ON `tabGL Entry`.against = payroll_party_accounts.supplier_id
+        WHERE acc.account_type IN ('Bank','Cash')
+            AND `tabGL Entry`.is_cancelled = 0
+            AND `tabGL Entry`.voucher_subtype IN ('Journal Entry','Pay')
+            AND `tabGL Entry`.posting_date BETWEEN '2026-07-01' AND '2026-07-31'
+            AND `tabGL Entry`.account NOT IN ('Suspense Account NML')
+            AND `tabGL Entry`.credit > 0
+    ),
+    
+    supplier_payments_list AS (
+        SELECT
+            posting_date,
+            account,
+            debit,
+            credit,
+            against,
+            supplier_name,
+            CASE 
+                WHEN parent_account ='2500 - Payroll Liabilities - NML' THEN "Salary Payment" 
+                ELSE "Supplier Payment" 
+            END AS Supplier_category,
+            voucher_type,
+            voucher_no,
+            voucher_subtype
+        FROM amount_paid_to_suppliers
+    ),
+    
+    collections_table AS (
+        SELECT
+            "Cash From Collections" AS Cash_Flow_Category,
+            account_name,
+            amount
+        FROM collected_amount_summary
+        
+    ),
+    
+    cash_outflow_list AS (
+        SELECT
+            "Cash Outflow" AS Cash_Flow_Category,
+            Supplier_category, 
+            SUM(credit) AS amount
+        FROM supplier_payments_list 
+        GROUP BY Supplier_category
+    ),
+    
+    other_drawings AS (
+        SELECT
+            `tabGL Entry`.posting_date,
+            `tabGL Entry`.account,
+            `tabGL Entry`.debit,
+            `tabGL Entry`.credit,
+            `tabGL Entry`.against,
+            -- supplier.supplier_name,
+            `tabGL Entry`.voucher_type,
+            `tabGL Entry`.voucher_no,
+            `tabGL Entry`.voucher_subtype,
+            supplier.supplier_name
+        FROM `tabGL Entry`
+            INNER JOIN `tabAccount` AS acc ON `tabGL Entry`.account = acc.name
+            LEFT JOIN `tabSupplier` AS supplier ON `tabGL Entry`.against = supplier.name
+            
+        WHERE acc.account_type IN ('Bank','Cash')
+            AND `tabGL Entry`.is_cancelled = 0
+            AND `tabGL Entry`.voucher_subtype NOT IN ('Internal Transfer')
+            AND `tabGL Entry`.posting_date BETWEEN '2026-07-01' AND '2026-07-31'
+            AND `tabGL Entry`.account NOT IN ('Suspense Account NML')
+            AND `tabGL Entry`.credit > 0
+            
+    ),
+    
+    grouped_drawing AS (
+        SELECT against, 
+            SUM(credit) AS draw_amount 
+        FROM other_drawings 
+            WHERE supplier_name IS NULL
+            AND against NOT IN ('04003101171250 I&M BANK KES A/C - NML')
+        GROUP BY against
+    ),
+    
+    other_drawing_amounts AS (
+        SELECT
+            "Other drawings" AS Cash_Flow_Category, 
+            against AS account_name, 
+            draw_amount AS amount 
+        FROM grouped_drawing
+    ),
+    
+    cash_flow_table AS (
+        SELECT * FROM collections_table
+        UNION ALL 
+        SELECT * FROM cash_outflow_list
+        UNION ALL
+        SELECT * FROM other_drawing_amounts
+    ),
+    
+    deficit_table AS (
+        SELECT "Balance/Deficit" AS Totals,
+            SUM(CASE WHEN Cash_Flow_Category = 'Cash From Collections' THEN amount ELSE 0 END) AS collections, 
+            SUM(CASE WHEN Cash_Flow_Category = 'Cash Outflow'  THEN amount ELSE 0 END) AS Supplier_payments, 
+            SUM(CASE WHEN Cash_Flow_Category = 'Other drawings'  THEN amount ELSE 0 END) AS other_drawings
+        FROM cash_flow_table
+            GROUP BY Totals
+    )
+    -- Visualised using a Sankey chart / diagram
+    SELECT * FROM cash_flow_table
