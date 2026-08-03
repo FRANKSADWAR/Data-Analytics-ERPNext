@@ -836,3 +836,43 @@ WITH
     )
     -- Visualised using a Sankey chart / diagram
     SELECT * FROM cash_flow_table
+
+
+-- COMPUTE INCOME AND EXPENSES FOR A PERIOD USING THE ACCOUNT TYPE
+WITH
+  income_and_expenses AS (
+    SELECT
+      `tabGL Entry`.posting_date,
+      `tabGL Entry`.debit,
+      `tabGL Entry`.credit,
+      `tabGL Entry`.account,
+      acc.parent_account,
+      acc.root_type,
+      acc.is_group
+    FROM
+      `tabGL Entry`
+      INNER JOIN `tabAccount` AS acc ON `tabGL Entry`.account = acc.name
+    WHERE
+      acc.root_type  IN ('Income','Expense')
+      AND `tabGL Entry`.is_cancelled = 0
+      AND `tabGL Entry`.posting_date BETWEEN '2026-07-01' AND '2026-07-31'
+    ),
+    
+    expense_and_income_table AS (
+        SELECT
+           "NEVIRA MINERALS LIMITED" AS company,
+            parent_account,
+            SUM(CASE WHEN root_type = 'Expense' THEN (debit - credit) END) AS total_expenses,
+            SUM(CASE WHEN root_type = 'Income' THEN (credit - debit) END) AS total_income
+        FROM income_and_expenses 
+        GROUP BY parent_account
+    )
+    
+    SELECT 
+        company, 
+        "Net Profit" AS Account,
+        (SUM(total_income)- SUM(total_expenses)) AS Net_Profit,
+        "" AS Account_type
+    FROM expense_and_income_table
+    
+    
