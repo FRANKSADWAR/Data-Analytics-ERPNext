@@ -875,4 +875,18 @@ WITH
         "" AS Account_type
     FROM expense_and_income_table
     
-    
+
+-- Compute the cumulative sales revenue per day
+SELECT
+    posting_date,
+    SUM(base_grand_total) AS daily_sales,
+    (135000000/31) AS daily_sales_target,
+    SUM(SUM(base_grand_total)) OVER(ORDER BY posting_date) AS cumulative_sales
+FROM `tabSales Invoice`
+WHERE 
+    docstatus = 1
+    AND MONTH(posting_date) = MONTH(CURDATE())
+    AND YEAR(posting_date) = YEAR(CURDATE())
+    AND status NOT IN ('Return')
+GROUP BY posting_date
+ORDER BY posting_date ASC
