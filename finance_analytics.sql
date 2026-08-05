@@ -890,21 +890,3 @@ WHERE
     AND status NOT IN ('Return')
 GROUP BY posting_date
 ORDER BY posting_date ASC
-
-CREATE TABLE IF NOT EXISTS customers (
-    customer_id INT PRIMARY KEY AUTO_INCREMENT,
-    customer_namename VARCHAR(150),
-    phone_number VARCHAR(150),
-    email_address VARCHAR(150),
-    country VARCHAR(150),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IS NOT EXISTS products (
-    product_sku INT PRIMARY_KEY AUTO_INCREMENT,
-    product_name VARCHAR(150),
-    unit_price DOUBLE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);

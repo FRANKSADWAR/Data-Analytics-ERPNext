@@ -1,0 +1,29 @@
+CREATE TABLE IF NOT EXISTS customers (
+    customer_id INT PRIMARY KEY AUTO_INCREMENT,
+    customer_namename VARCHAR(150),
+    phone_number VARCHAR(150),
+    email_address VARCHAR(150),
+    country VARCHAR(150),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IS NOT EXISTS products (
+    product_sku INT PRIMARY_KEY AUTO_INCREMENT,
+    product_name VARCHAR(150),
+    unit_price DOUBLE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS purchase_history AS (
+    customer_id INTEGER,
+    product_sku INTEGER,
+    channel_id INTEGER,
+    quantity INT,
+    discount DOUBLE DEFAULT 0,
+    order_date DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN_KEY(channel_id) REFERENCES channels(channel_id),
+)
