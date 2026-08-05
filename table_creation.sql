@@ -37,3 +37,14 @@ CREATE TABLE IF NOT EXISTS purchase_history AS (
     FOREIGN_KEY(customer_id) REFERENCES customers(customer_id),
     FOREIGN_KEY(product_sku) REFERENCES products(product_sku)
 );
+
+CREATE TABLE IF NOT EXISTS visit_history AS (
+    customer_id INTEGER,
+    channel_id INTEGER,
+    visit_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    bounce_timestamp TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN_KEY(channel_id) REFERENCES channels(channel_id),
+    FOREIGN_KEY(customer_id) REFERENCES customers(customer_id)
+);
