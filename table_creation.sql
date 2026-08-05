@@ -16,6 +16,14 @@ CREATE TABLE IS NOT EXISTS products (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS channels (
+    channel_id INT PRIMARY KEY AUTO_INCREMENT,
+    channel_name VARCHAR(150),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+
 CREATE TABLE IF NOT EXISTS purchase_history AS (
     customer_id INTEGER,
     product_sku INTEGER,
@@ -26,4 +34,6 @@ CREATE TABLE IF NOT EXISTS purchase_history AS (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN_KEY(channel_id) REFERENCES channels(channel_id),
-)
+    FOREIGN_KEY(customer_id) REFERENCES customers(customer_id),
+    FOREIGN_KEY(product_sku) REFERENCES products(product_sku)
+);
