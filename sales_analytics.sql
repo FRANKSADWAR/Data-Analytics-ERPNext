@@ -385,4 +385,34 @@ WITH RECURSIVE calendar AS (
     WHERE posting_date < LAST_DAY(CURDATE())
   ),
 
+  sales_invoices AS (
+        SELECT
+            `tabSales Invoice`.posting_date,
+            `tabSales Invoice`.name AS sales_invoice_id,
+            `tabSales Invoice`.customer, 
+            `tabSales Invoice`.customer_name,
+            `tabSales Invoice`.base_grand_total,
+            `tabSales Invoice`.status,
+            MONTH(`tabSales Invoice`.posting_date) AS month_no,
+            YEAR(`tabSales Invoice`.posting_date) AS year_no
+        FROM `tabSales Invoice`
+        WHERE
+            `tabSales Invoice`.docstatus = 1
+            -- AND `tabSales Invoice`.status NOT IN ('Return')
+            AND MONTH(posting_date) = MONTH(CURDATE())
+            AND YEAR(posting_date) = YEAR(CURDATE())
+     
+    ),
+    
+    daily_sales AS (
+        SELECT
+            calendar.posting_date,
+            IFNULL(SUM(sales_invoices.base_grand_total),0) AS sales_today
+        FROM calendar
+        LEFT JOIN sales_invoices ON calendar.posting_date = sales_invoices.posting_date
+        GROUP BY calendar.posting_date 
+        ORDER BY calendar.posting_date ASC
+            
+    )
+
 
