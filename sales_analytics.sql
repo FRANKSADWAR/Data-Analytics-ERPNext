@@ -374,3 +374,15 @@ WITH
     FROM targets_and_current_sales_list
     ORDER BY posting_date ASC 
     
+
+
+-- ENHANCE DAILY SALES TRACKER using recursive date function
+WITH RECURSIVE calendar AS (
+    SELECT DATE_FORMAT(CURDATE(),'%Y-%m-01') AS posting_date
+    UNION ALL
+    SELECT DATE_ADD(posting_date, INTERVAL 1 DAY)
+    FROM calendar
+    WHERE posting_date < LAST_DAY(CURDATE())
+  ),
+
+
