@@ -438,6 +438,25 @@ WITH
     deficit_today AS (
     
     
+    ),
+
+    targets_summary AS (
+      -- Now adjust the future sales based on the deficit
+      SELECT
+        t.posting_date,
+        t.sales_today,
+        t.cumulative_sales,
+        (t.sales_target_cumulative - t.cumulative_sales) AS cumulative_deficit,
+        (t.sales_target_cumulative - t.cumulative_sales) / GREATEST(DATEDIFF(LAST_DAY(CURDATE()), t.posting_date),1) AS spread_per_day,
+        CASE
+            WHEN t.posting_date >= CURDATE() THEN t.sales_target + (d.current_deficit / d.remaining_days) 
+            ELSE NULL 
+        END AS new_daily_sales_target
+      FROM targets_and_current_sales_list AS t 
+      CROSS JOIN deficit_today AS d 
+      ORDER BY t.posting_date ASC
     )
+
+    SELECT * FROM targets_summary WHERE posting_date = CURDATE()
 
 
