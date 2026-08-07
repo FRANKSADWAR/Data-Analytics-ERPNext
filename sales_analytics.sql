@@ -321,3 +321,29 @@ WITH
   SELECT * FROM sales_target 
   
   
+WITH sales_invoices AS (
+  SELECT
+    `tabSales Invoice`.posting_date,
+    `tabSales Invoice`.name AS sales_invoice_id,
+    `tabSales Invoice`.customer,
+    `tabSales Invoice`.customer_name,
+    `tabSales Invoice`.base_grand_total,
+    `tabSales Invoice`.status
+  FROM `tabSales Invoice`
+  WHERE
+    `tabSales Invoice`.docstatus = 1
+    AND `tabSales Invoice`.status NOT IN ('Return')
+    AND MONTH(posting_date) = MONTH(CURDATE())
+    AND YEAR(posting_date) = YEAR(posting_date)
+)
+
+SELECT 
+  posting_date, 
+  SUM(base_grand_total) AS daily_sales,
+  SUM(base_grand_total) OVER(PARTITION BY posting_date) AS cumulative_sales
+FROM sales_invoices 
+GROUP BY posting_date 
+ORDER BY posting_date ASC
+
+
+   
