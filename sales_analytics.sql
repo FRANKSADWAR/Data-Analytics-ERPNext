@@ -377,15 +377,16 @@ WITH
 
 
 -- ENHANCE DAILY SALES TRACKER using recursive date function
-WITH RECURSIVE calendar AS (
-    SELECT DATE_FORMAT(CURDATE(),'%Y-%m-01') AS posting_date
-    UNION ALL
-    SELECT DATE_ADD(posting_date, INTERVAL 1 DAY)
-    FROM calendar
-    WHERE posting_date < LAST_DAY(CURDATE())
-  ),
-
-  sales_invoices AS (
+WITH 
+    RECURSIVE calendar AS (
+        SELECT DATE_FORMAT(CURDATE(),'%Y-%m-01') AS posting_date
+        UNION ALL
+        SELECT DATE_ADD(posting_date, INTERVAL 1 DAY)
+        FROM calendar
+        WHERE posting_date < LAST_DAY(CURDATE())
+    ),
+    
+    sales_invoices AS (
         SELECT
             `tabSales Invoice`.posting_date,
             `tabSales Invoice`.name AS sales_invoice_id,
@@ -413,6 +414,30 @@ WITH RECURSIVE calendar AS (
         GROUP BY calendar.posting_date 
         ORDER BY calendar.posting_date ASC
             
+    ),
+    
+    sales_targets_table AS (
+        SELECT
+            posting_date,
+            sales_today,
+            SUM(sales_today) OVER(ORDER BY posting_date) AS cumulative_sales,
+            (135000000)/DAY(LAST_DAY(CURDATE())) AS sales_target
+        FROM daily_sales
+    ),
+    
+    targets_and_current_sales_list AS (
+        SELECT 
+            posting_date,
+            sales_today,
+            cumulative_sales,
+            SUM(sales_target) OVER(ORDER BY posting_date) AS sales_target_cumulative
+        FROM sales_targets_table
+        ORDER BY posting_date ASC
+    ),
+    
+    deficit_today AS (
+    
+    
     )
 
 
