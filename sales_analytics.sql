@@ -347,7 +347,7 @@ WITH
             posting_date,
             SUM(base_grand_total) AS sales_today,
             SUM(SUM(base_grand_total)) OVER(ORDER BY posting_date) AS cumulative_sales,
-            (135000000/31) AS sales_target
+            (135000000/  DAY(LAST_DAY(CURDATE()))) AS sales_target
         FROM sales_invoices
             GROUP BY posting_date
             ORDER BY posting_date ASC
@@ -370,9 +370,11 @@ WITH
         cumulative_sales,
         sales_target_cumulative,
         (sales_target_cumulative - cumulative_sales)  AS cumulative_deficit,
-        (sales_target_cumulative - cumulative_sales) / (DATEDIFF('2026-08-31', posting_date)) AS spread_per_day
+        (sales_target_cumulative - cumulative_sales) / (DATEDIFF(LAST_DAY(CURDATE()), posting_date)) AS spread_per_day
     FROM targets_and_current_sales_list
     ORDER BY posting_date ASC 
+    
+   
     
 
 
