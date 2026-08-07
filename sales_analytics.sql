@@ -321,29 +321,56 @@ WITH
   SELECT * FROM sales_target 
   
   
-WITH sales_invoices AS (
-  SELECT
-    `tabSales Invoice`.posting_date,
-    `tabSales Invoice`.name AS sales_invoice_id,
-    `tabSales Invoice`.customer,
-    `tabSales Invoice`.customer_name,
-    `tabSales Invoice`.base_grand_total,
-    `tabSales Invoice`.status
-  FROM `tabSales Invoice`
-  WHERE
-    `tabSales Invoice`.docstatus = 1
-    AND `tabSales Invoice`.status NOT IN ('Return')
-    AND MONTH(posting_date) = MONTH(CURDATE())
-    AND YEAR(posting_date) = YEAR(posting_date)
-)
 
-SELECT 
-  posting_date, 
-  SUM(base_grand_total) AS daily_sales,
-  SUM(base_grand_total) OVER(PARTITION BY posting_date) AS cumulative_sales
-FROM sales_invoices 
-GROUP BY posting_date 
-ORDER BY posting_date ASC
+-- COMPUTE THE DAILY SALES TARGET AND THE CUMULATIVE SALES PER DAY TO ENHANCE THE SALES TARGET TRACKER QUERY
+WITH 
+    sales_invoices AS (
+        SELECT
+            `tabSales Invoice`.posting_date,
+            `tabSales Invoice`.name AS sales_invoice_id,
+            `tabSales Invoice`.customer, 
+            `tabSales Invoice`.customer_name,
+            `tabSales Invoice`.base_grand_total,
+            `tabSales Invoice`.status,
+            MONTH(`tabSales Invoice`.posting_date) AS month_no,
+            YEAR(`tabSales Invoice`.posting_date) AS year_no
+        FROM `tabSales Invoice`
+        WHERE
+            `tabSales Invoice`.docstatus = 1
+            -- AND `tabSales Invoice`.status NOT IN ('Return')
+            AND MONTH(posting_date) = MONTH(CURDATE())
+            AND YEAR(posting_date) = YEAR(CURDATE())
+    ),
 
-
-   
+    sales_targets_table AS (
+        SELECT
+            posting_date,
+            SUM(base_grand_total) AS sales_today,
+            SUM(SUM(base_grand_total)) OVER(ORDER BY posting_date) AS cumulative_sales,
+            (135000000/31) AS sales_target
+        FROM sales_invoices
+            GROUP BY posting_date
+            ORDER BY posting_date ASC
+    ),
+    
+    targets_and_current_sales_list AS (
+        SELECT 
+            posting_date,
+            sales_today,
+            cumulative_sales,
+            SUM(SUM(sales_target)) OVER(ORDER BY posting_date) AS sales_target_cumulative
+        FROM sales_targets_table
+        GROUP BY posting_date
+        ORDER BY posting_date ASC
+    )
+    
+    SELECT 
+        posting_date,
+        sales_today,
+        cumulative_sales,
+        sales_target_cumulative,
+        (sales_target_cumulative - cumulative_sales)  AS cumulative_deficit,
+        (sales_target_cumulative - cumulative_sales) / (DATEDIFF('2026-08-31', posting_date)) AS spread_per_day
+    FROM targets_and_current_sales_list
+    ORDER BY posting_date ASC 
+    
